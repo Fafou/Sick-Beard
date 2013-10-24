@@ -744,4 +744,10 @@ class AddFrenchSearch (AddProcessedFilesTable):
         if self.hasColumn("tv_shows", "frenchsearch") != True:
             self.addColumn("tv_shows", "frenchsearch", "NUMERIC", 0)
         self.incDBVersion()
-   
+
+class AddSubtitlesIncrusted (AddFrenchSearch):
+    def test(self):
+        return self.hasColumn("tv_episodes", "embeded_subtitle")
+
+    def execute(self):
+        self.addColumn("tv_episodes", "embeded_subtitle", "TEXT")  

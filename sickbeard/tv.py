@@ -639,7 +639,7 @@ class TVShow(object):
             self.paused = int(sqlResults[0]["paused"])
             self.frenchsearch = int(sqlResults[0]["frenchsearch"])
             self._location = sqlResults[0]["location"]
-
+            
             if self.tvrid == 0:
                 self.tvrid = int(sqlResults[0]["tvr_id"])
 
@@ -1123,6 +1123,7 @@ class TVEpisode(object):
         self._file_size = 0
         self._audio_langs = ''
         self._release_name = ''
+        self._embeded_subtitle = ''
 
         # setting any of the above sets the dirty flag
         self.dirty = True
@@ -1154,6 +1155,7 @@ class TVEpisode(object):
     file_size = property(lambda self: self._file_size, dirty_setter("_file_size"))
     audio_langs = property(lambda self: self._audio_langs, dirty_setter("_audio_langs"))
     release_name = property(lambda self: self._release_name, dirty_setter("_release_name"))
+    embeded_subtitle = property(lambda self: self._embeded_subtitle, dirty_setter("_embeded_subtitle"))
 
     def _set_location(self, new_location):
         logger.log(u"Setter sets location to " + new_location, logger.DEBUG)
@@ -1169,9 +1171,26 @@ class TVEpisode(object):
     location = property(lambda self: self._location, _set_location)
     def refreshSubtitles(self):
         """Look for subtitles files and refresh the subtitles property"""
+        # Subtitles are embeded so wo not need to refresh it
+        if self.embeded_subtitle:
+            return
         self.subtitles = subtitles.subtitlesLanguages(self.location)
 
+    def setEmbededSubtitle (self, subtitle_lang):
+        if self.location:
+            if subtitle_lang == "none":
+                self.embeded_subtitle =''
+            else:
+                self.embeded_subtitle = "embedded"
+                self.subtitles = [subtitle_lang]
+                self.audio_langs = self.show.audio_lang
+        else:
+            logger.log(u"Not able to change episode " + str(self.season) + "x" + str(self.episode), logger.DEBUG)
+
     def downloadSubtitles(self):
+        # Subtitles are embeded so wo not need to download it
+        if self.embeded_subtitle:
+            return
         #TODO: Add support for force option
         if not ek.ek(os.path.isfile, self.location):
             logger.log(str(self.show.tvdbid) + ": Episode file doesn't exist, can't download subtitles for episode " + str(self.season) + "x" + str(self.episode), logger.DEBUG)
@@ -1181,7 +1200,7 @@ class TVEpisode(object):
         previous_subtitles = self.subtitles
 
         try:
-                                    
+                                
             need_languages = set(sickbeard.SUBTITLES_LANGUAGES) - set(self.subtitles)
             subtitles = subliminal.download_subtitles([self.location], languages=need_languages, services=sickbeard.subtitles.getEnabledServiceList(), force=False, multi=True, cache_dir=sickbeard.CACHE_DIR)
             
@@ -1251,6 +1270,9 @@ class TVEpisode(object):
         return subtitles
 
     def cleanSubtitles(self):
+        # Subtitles are embeded so wo not need to clean it
+        if self.embeded_subtitle:
+            return
         if not ek.ek(os.path.isfile, self.location):
             logger.log(str(self.show.tvdbid) + ": Episode file doesn't exist, can't clean subtitles for episode " + str(self.season) + "x" + str(self.episode), logger.DEBUG)
             return
@@ -1380,6 +1402,8 @@ class TVEpisode(object):
             self.description = sqlResults[0]["description"]
             if self.description == None:
                 self.description = ""
+            if self.embeded_subtitle == "":
+                self.embeded_subtitle = sqlResults[0]["embeded_subtitle"]
             if sqlResults[0]["subtitles"] != None and sqlResults[0]["subtitles"] != '':
                 self.subtitles = sqlResults[0]["subtitles"].split(",")
             self.subtitles_searchcount = sqlResults[0]["subtitles_searchcount"]
@@ -1693,7 +1717,8 @@ class TVEpisode(object):
                         "location": self.location,
                         "audio_langs": self.audio_langs,
                         "file_size": self.file_size,
-                        "release_name": self.release_name}
+                        "release_name": self.release_name,
+                        "embeded_subtitle": self.embeded_subtitle}
         controlValueDict = {"showid": self.show.tvdbid,
                             "season": self.season,
                             "episode": self.episode}

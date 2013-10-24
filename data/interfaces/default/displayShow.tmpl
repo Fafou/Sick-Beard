@@ -281,8 +281,21 @@
 		>$v</option>
 		#end for
 	</select>
-		<input type="hidden" id="showID" value="$show.tvdbid" />
-		<input type="button" class="btn" id="changeAudio" value="Go" />
+	<input type="hidden" id="showID" value="$show.tvdbid" />
+	<input type="button" class="btn" id="changeAudio" value="Go" />
+</div>	
+<div class="float-left">
+	Set as embedded subtitle:
+	<select id="subtitleSelect">
+		#for $k,$v in $common.showLanguages.iteritems():
+		#if $k!="":
+		<option value="$k"
+		#end if
+		>$v</option>
+		#end for
+		<option value="none"> None </option>
+	</select>
+	<input type="button" class="btn" id="embededSubtitle" value="Go" />
 </div>	
 
 <table class="sickbeardTable" cellspacing="1" border="0" cellpadding="0">
@@ -329,7 +342,7 @@ $epLoc
 	</td>
     <td align="center" class="audio_langs_column">
     #set $curStatus, $curQuality = $Quality.splitCompositeStatus(int($epResult["status"]))
-                #if $epResult["audio_langs"] == "" and $curStatus in [$DOWNLOADED, $SNATCHED, $ARCHIVED]
+				#if $epResult["audio_langs"] == ""
                 <img src="$sbRoot/images/flags/unknown.png" alt="" width="20" />
                 #else
                 <img src="$sbRoot/images/flags/${epResult["audio_langs"]}.png" alt="$epResult["audio_langs"]" width="16" />
@@ -342,7 +355,11 @@ $epLoc
     #if $epResult["subtitles"]:
         #for $sub_lang in subliminal.language.language_list($epResult["subtitles"].split(',')):
             #if sub_lang.alpha2 != ""
-            	<img src="$sbRoot/images/flags/${sub_lang.alpha2}.png" width="16" alt="${sub_lang}" />
+				#if $epResult["embeded_subtitle"]
+					<img src="$sbRoot/images/flags/${sub_lang.alpha2}_i.png" width="16" alt="${sub_lang}" />
+				#else
+					<img src="$sbRoot/images/flags/${sub_lang.alpha2}.png" width="16" alt="${sub_lang}" />
+				#end if
 			#end if
         #end for
     #end if
@@ -359,7 +376,7 @@ $epLoc
     #if int($epResult["season"]) != 0:
       <a class="epSearch" href="searchEpisode?show=$show.tvdbid&amp;season=$epResult["season"]&amp;episode=$epResult["episode"]"><img src="$sbRoot/images/search16.png" height="16" alt="search" title="Manual Search" /></a>
     #end if
-#if $sickbeard.USE_SUBTITLES and $show.subtitles and len(set(str($epResult["subtitles"]).split(',')).intersection(set($subtitles.wantedLanguages()))) < len($subtitles.wantedLanguages()) and $epResult["location"]
+	#if $sickbeard.USE_SUBTITLES and $show.subtitles and not $epResult["embeded_subtitle"] and len(set(str($epResult["subtitles"]).split(',')).intersection(set($subtitles.wantedLanguages()))) < len($subtitles.wantedLanguages()) and $epResult["location"]
       <a class="epSubtitlesSearch" href="searchEpisodeSubtitles?show=$show.tvdbid&amp;season=$epResult["season"]&amp;episode=$epResult["episode"]"><img src="$sbRoot/images/closed_captioning.png" height="16" alt="search subtitles" title="Search Subtitles" /></a>
     #end if
     </td>

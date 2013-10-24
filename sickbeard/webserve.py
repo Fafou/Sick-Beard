@@ -3395,6 +3395,45 @@ class Home:
             redirect("/home/displayShow?show=" + show)
 
     @cherrypy.expose
+    def setEmbededSubtitle(self, show=None, eps=None, subtitle_lang=None, direct=False):
+    
+        if show == None or eps == None:
+            errMsg = "You must specify a show and at least one episode"
+            if direct:
+                ui.notifications.error('Error', errMsg)
+                return json.dumps({'result': 'error'})
+            else:
+                return _genericMessage("Error", errMsg)
+
+        showObj = sickbeard.helpers.findCertainShow(sickbeard.showList, int(show))
+
+        if showObj == None:
+            return _genericMessage("Error", "Show not in show list")
+
+        try:
+            show_loc = showObj.location #@UnusedVariable
+        except exceptions.ShowDirNotFoundException:
+            return _genericMessage("Error", "Can't rename episodes when the show dir is missing.")
+
+        ep_obj_rename_list = []
+
+        for curEp in eps.split('|'):
+            
+                logger.log(u"Attempting to set as embedded subtitle on episode "+curEp, logger.DEBUG)
+
+                epInfo = curEp.split('x')
+
+                epObj = showObj.getEpisode(int(epInfo[0]), int(epInfo[1]))
+
+                epObj.setEmbededSubtitle(subtitle_lang)
+                epObj.saveToDB()
+        
+        if direct:
+            return json.dumps({'result': 'success'})
+        else:
+            redirect("/home/displayShow?show=" + show)
+
+    @cherrypy.expose
     def testRename(self, show=None):
 
         if show == None:
