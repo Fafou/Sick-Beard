@@ -658,11 +658,22 @@ class PostProcessor(object):
                     season = 1
             
             if tvdb_id and season != None and episodes:
-                return (tvdb_id, season, episodes)
-    
-        return (tvdb_id, season, episodes)
-    
-    def _get_ep_obj(self, tvdb_id, season, episodes):
+                season, episodes = self._sceneToTVDBNumbers(tvdb_id, season, episodes)
+                
+        return (tvdb_id, season, episodes)  
+        
+    def _sceneToTVDBNumbers(self, tvdb_id, season, episodes):
+        
+        self._log(u"This looks like a scene release converting scene numbers to tvdb numbers", logger.DEBUG)
+        ep_obj = self._get_ep_obj(tvdb_id, season, episodes, scene=True)
+        if ep_obj:
+            newEpisodeNumbers = []
+            for curEp in [ep_obj] + ep_obj.relatedEps:
+                newEpisodeNumbers.append(curEp.episode)
+            return (ep_obj.season, newEpisodeNumbers)
+        return (season, episodes)
+   
+    def _get_ep_obj(self, tvdb_id, season, episodes, scene=False):
         """
         Retrieve the TVEpisode object requested.
         
@@ -675,7 +686,9 @@ class PostProcessor(object):
         """
 
         show_obj = None
-
+        sceneMsg = ""
+        if scene:
+            sceneMsg = "(scene numbers) "
         self._log(u"Loading show object for tvdb_id "+str(tvdb_id), logger.DEBUG)
         # find the show in the showlist
         try:
@@ -692,11 +705,16 @@ class PostProcessor(object):
         for cur_episode in episodes:
             episode = int(cur_episode)
     
-            self._log(u"Retrieving episode object for " + str(season) + "x" + str(episode), logger.DEBUG)
+            self._log(u"Retrieving episode object for " + sceneMsg + str(season) + "x" + str(episode), logger.DEBUG)
     
             # now that we've figured out which episode this file is just load it manually
             try:
-                curEp = show_obj.getEpisode(season, episode)
+                myDB = db.DBConnection()
+                is_scene = myDB.select("SELECT scene_episode FROM tv_episodes WHERE showid = ? AND scene_season = ? AND scene_episode = ?", [tvdb_id, season, episode])
+                if is_scene and scene:
+                    curEp = show_obj.getEpisode(season, episode, scene=True)
+                else:
+                    curEp = show_obj.getEpisode(season, episode, scene=False)
             except exceptions.EpisodeNotFoundException, e:
                 self._log(u"Unable to create episode: "+ex(e), logger.DEBUG)
                 raise exceptions.PostProcessingFailed()
@@ -704,8 +722,10 @@ class PostProcessor(object):
             # associate all the episodes together under a single root episode
             if root_ep == None:
                 root_ep = curEp
-                root_ep.relatedEps = []
+                if not scene:
+                    root_ep.relatedEps = []
             elif curEp not in root_ep.relatedEps:
+                self._log("Adding a related episode: " + str(curEp.season) + "x" + str(curEp.episode))
                 root_ep.relatedEps.append(curEp)
         
         return root_ep
