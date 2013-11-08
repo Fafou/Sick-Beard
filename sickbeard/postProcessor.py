@@ -155,9 +155,9 @@ class PostProcessor(object):
 
         file_path_list = []
         if subtitles_only:
-            head, tail = os.path.split(subtitles_only)
+            head, tail = ek.ek(os.path.split, subtitles_only)
             base_tail = tail.rpartition('.')[0]+'.'
-            base_name = os.path.join(file_path,base_tail)
+            base_name = ek.ek(os.path.join,file_path,base_tail)
         else:
             base_name = file_path.rpartition('.')[0]+'.'
         
@@ -210,7 +210,7 @@ class PostProcessor(object):
         ass_files=ek.ek(glob.glob, base_name+'*')
         dum_files=ek.ek(glob.glob, cur_dir+'\*')
         for dummy_file_path in dum_files:
-            if os.path.isdir(dummy_file_path):
+            if ek.ek(os.path.isdir,dummy_file_path):
                 self._list_dummy_files(dummy_file_path, base_name,"d")
             elif dummy_file_path==self.file_path or dummy_file_path[len(dummy_file_path)-3:] in common.mediaExtensions or sickbeard.MOVE_ASSOCIATED_FILES or (sickbeard.TORRENT_DOWNLOAD_DIR != "" and sickbeard.TORRENT_DOWNLOAD_DIR in cur_dir and sickbeard.PROCESS_METHOD in ['copy','hardlink','symlink']):
                 continue
@@ -313,7 +313,7 @@ class PostProcessor(object):
                 new_file_path = ek.ek(os.path.join, subs_new_path, new_file_name)
             else:
                 if sickbeard.SUBTITLES_DIR_SUB and cur_extension in common.subtitleExtensions:
-                    subs_new_path = os.path.join(os.path.dirname(file.path),"Subs")
+                    subs_new_path = ek.ek(os.path.join,ek.ek(os.path.dirname,file.path),"Subs")
                     dir_exists = helpers.makeDir(subs_new_path)
                     if not dir_exists:
                         logger.log(u"Unable to create subtitles folder "+subs_new_path, logger.ERROR)
@@ -500,7 +500,7 @@ class PostProcessor(object):
             
             # if the result is complete then remember that for later
             if parse_result.series_name and parse_result.season_number != None and parse_result.episode_numbers and parse_result.release_group:
-                test_name = os.path.basename(name)
+                test_name = ek.ek(os.path.basename, name)
                 if test_name == self.nzb_name:
                     self.good_results[self.NZB_NAME] = True
                 elif test_name == self.folder_name:
@@ -833,7 +833,7 @@ class PostProcessor(object):
 
         self._log(u"Processing " + self.file_path + " (" + str(self.nzb_name) + ")")
 
-        if os.path.isdir(self.file_path):
+        if ek.ek(os.path.isdir, self.file_path):
             self._log(u"File " + self.file_path + " seems to be a directory")
             return False
         for ignore_file in self.IGNORED_FILESTRINGS:
@@ -976,7 +976,7 @@ class PostProcessor(object):
        
         try:
             
-            path,file=os.path.split(self.file_path)
+            path,file=ek.ek(os.path.split, self.file_path)
             
             if sickbeard.TORRENT_DOWNLOAD_DIR in path and sickbeard.TORRENT_DOWNLOAD_DIR != "":
                 #Action possible pour les torrent
