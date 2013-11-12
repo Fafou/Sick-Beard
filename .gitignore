@@ -28,6 +28,9 @@ tests/cache.db
 *.tmproj
 *.tmproject
 *.sw?
+*.pyproj
+*.sln
+*.suo
 /.idea
 
 # OS generated files #
